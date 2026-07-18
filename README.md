@@ -1,5 +1,6 @@
 # COP-DROID
 
+![COP-DROID Robot](pictures/cop.jpeg)
 **Cop-Droid** is an autonomous sentinel robot designed to intelligently patrol ground environments. It uses ultrasonic sensors (sonar) for navigation and obstacle avoidance, while an **ESP32-CAM** runs a **YOLO**-based computer vision model on the server side to detect people in real time.
 
 When a person is detected, the system can execute configurable responses such as activating a signaling laser, playing an alarm, or sending an instant **Telegram** notification, enabling efficient remote supervision.
@@ -7,6 +8,12 @@ When a person is detected, the system can execute configurable responses such as
 The project integrates both **passive capabilities** (continuous monitoring, autonomous navigation, environment perception) and **active capabilities** (automatic actions upon detected events), offering a low-cost intelligent surveillance solution.
 
 Cop-Droid also includes a **web dashboard** that allows operators to view real-time robot status, performance metrics, detected events, and activity history.
+
+### Dashboard
+
+![Dashboard View 1](pictures/dash1.jpeg)
+
+![Dashboard View 2](pictures/dash2.jpeg)
 
 ---
 
@@ -295,6 +302,9 @@ pio device monitor
    - Sends `LASER_ON` to the engine's WebSocket (turns on for 5 seconds)
    - Plays `siren.mp3` via `mpg123`
    - Sends a Telegram notification (if `TELEGRAM_URL` is configured)
+
+   ![Telegram Notification](pictures/telegram.jpeg)
+
 4. **Dashboard** polls `/devices` every 2 seconds and displays camera streams, radar view, laser status, and event logs in real time.
 
 ---
