@@ -1,16 +1,13 @@
 import os
 import time
 
-from fastapi import APIRouter, Request
-from fastapi.responses import HTMLResponse, JSONResponse
-from fastapi.templating import Jinja2Templates
+from fastapi import APIRouter
+from fastapi.responses import JSONResponse
 
 from ..config import LASER_TIMEOUT
 from ..state import devices, devices_registry_lock, active_websockets, get_last_person_time
 
 router = APIRouter()
-TEMPLATES_DIR = os.path.join(os.path.dirname(__file__), "..", "templates")
-templates = Jinja2Templates(directory=TEMPLATES_DIR)
 
 
 @router.get("/health")
@@ -47,6 +44,16 @@ async def list_devices():
     })
 
 
-@router.get("/", response_class=HTMLResponse)
-async def index(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
+@router.get("/")
+async def index():
+    return JSONResponse({
+        "name": "COP-DROID API",
+        "version": "0.1.0",
+        "docs": "/docs",
+        "endpoints": {
+            "health": "/health",
+            "devices": "/devices",
+            "video_stream": "/video/{device_id}",
+            "websocket": "/ws/{device_id}",
+        },
+    })
