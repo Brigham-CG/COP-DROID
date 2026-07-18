@@ -1,0 +1,27 @@
+__pycache__
+*.pyc
+.env
+.venv
+dist/
+*.egg-info/
+.pytest_cache/
+
+# YOLO weights
+*.pt
+*.onnx
+
+# Ultralytics output
+runs/
+
+# Images & media
+*.jpg
+*.jpeg
+*.png
+*.mp4
+*.avi
+
+# ESP32 / PlatformIO builds
+.pio/
+
+# OS generated files
+.DS_Store
