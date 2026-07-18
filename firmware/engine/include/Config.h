@@ -17,4 +17,8 @@
 #define IN3 32
 #define IN4 27
 
+#define ENA_PIN 22
+#define ENB_PIN 4
+#define DEFAULT_SPEED 180
+
 #endif
