@@ -1,10 +1,15 @@
 import time
 import asyncio
+import urllib.request
+import subprocess
+import os
+from pathlib import Path
+
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from .config import STALE_REMOVE_SECONDS, LASER_TIMEOUT
+from .config import STALE_REMOVE_SECONDS, LASER_TIMEOUT, TELEGRAM_URL
 from .state import devices, devices_registry_lock, active_websockets, get_last_person_time
 from .routes import ws, stream, api
 
@@ -38,6 +43,25 @@ async def start_background_tasks():
                     devices.pop(dev_id, None)
                     print(f"[x] Device purged by inactivity: {dev_id}")
 
+    _player = None
+
+    def play_alarm():
+        nonlocal _player
+        if _player is not None and _player.poll() is None:
+            # Ya hay una alarma sonando
+            return
+            
+        siren_path = Path(__file__).parent / "media" / "siren.mp3"
+        try:
+            _player = subprocess.Popen(
+                ["mpg123", "-q", str(siren_path)],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                start_new_session=True
+            )
+        except Exception as e:
+            print(f"Siren error: {e}")
+
     async def laser_manager_task():
         laser_is_on = False
         while True:
@@ -49,6 +73,18 @@ async def start_background_tasks():
             if last_time > 0:
                 if should_be_on and not laser_is_on:
                     laser_is_on = True
+
+                    play_alarm()
+
+                    def send_telegram():
+                        if not TELEGRAM_URL:
+                            return
+                        try:
+                            urllib.request.urlopen(TELEGRAM_URL, timeout=5)
+                        except Exception as e:
+                            print(f"Telegram error: {e}")
+                    asyncio.create_task(asyncio.to_thread(send_telegram))
+
                     connected = list(active_websockets.values())
                     has_other = len(connected) > 1
                     if has_other:
