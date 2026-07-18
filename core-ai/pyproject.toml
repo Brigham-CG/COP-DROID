@@ -5,7 +5,17 @@ description = "Cop Droid Core AI"
 authors = [{ name = "misash & Brigham" }]
 requires-python = ">=3.12"
 dependencies = [
-    "fastapi>=0.115.0",
-    "uvicorn[standard]>=0.34.0",
-    "python-dotenv>=1.0.0",
+    "fastapi==0.110.0",
+    "jinja2",
+    "numpy<2.0.0",
+    "opencv-python==4.9.0.80",
+    "python-dotenv==1.0.1",
+    "torch",
+    "torchvision",
+    "ultralytics",
+    "uvicorn==0.28.0",
+    "websockets",
 ]
+
+[tool.uv]
+extra-index-url = ["https://download.pytorch.org/whl/cpu"]
