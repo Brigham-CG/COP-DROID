@@ -11,9 +11,11 @@ active_websockets: Dict[WebSocket, str] = {}
 _last_person_time = 0.0
 
 system_events = []
+person_analyses = []
 
 def add_event(message: str) -> None:
     import time
+    print(f"[*] EVENTO: {message}")
     event_id = str(time.time())
     system_events.append({
         "id": event_id,
@@ -31,6 +33,14 @@ def get_last_person_time() -> float:
 def set_last_person_time(t: float) -> None:
     global _last_person_time
     _last_person_time = t
+
+
+def add_gemini_analysis(data: dict) -> None:
+    import time
+    data['timestamp'] = int(time.time() * 1000)
+    person_analyses.insert(0, data)
+    if len(person_analyses) > 50:
+        person_analyses.pop()
 
 
 async def get_device(device_id: str) -> DeviceState:

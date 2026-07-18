@@ -17,14 +17,14 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from config import STALE_REMOVE_SECONDS, LASER_TIMEOUT, TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, GOOGLE_API_KEY
-from state import devices, devices_registry_lock, active_websockets, get_last_person_time, add_event
+from state import devices, devices_registry_lock, active_websockets, get_last_person_time, add_event, add_gemini_analysis
 from routes import ws, stream, api
 
 app = FastAPI(title="COP-DROID", version="0.1.0")
 
 if GOOGLE_API_KEY:
     genai.configure(api_key=GOOGLE_API_KEY)
-gemini_model = genai.GenerativeModel('gemini-1.5-flash-latest')
+gemini_model = genai.GenerativeModel('gemini-2.5-flash')
 
 GEMINI_PROMPT = """
 Analiza la persona en la imagen para un sistema de seguridad. 
@@ -76,6 +76,11 @@ async def start_background_tasks():
             return
             
         siren_path = Path(__file__).parent / "media" / "siren.mp3"
+        if not siren_path.exists():
+            print(f"Siren error: {siren_path} not found!")
+            add_event("❌ Error: archivo siren.mp3 no encontrado")
+            return
+
         try:
             _player = subprocess.Popen(
                 ["mpg123", "-q", str(siren_path)],
@@ -87,6 +92,8 @@ async def start_background_tasks():
         except Exception as e:
             print(f"Siren error: {e}")
             add_event(f"❌ Error activando sirena: {e}")
+
+    background_tasks = set()
 
     async def laser_manager_task():
         laser_is_on = False
@@ -119,9 +126,10 @@ async def start_background_tasks():
                                     generation_config={"response_mime_type": "application/json"}
                                 )
                                 data = json.loads(response.text)
+                                add_gemini_analysis(data)
                                 formatted_json = json.dumps(data, indent=2, ensure_ascii=False)
                                 analisis_text = f"\n\n📝 Análisis Forense:\n```json\n{formatted_json}\n```"
-                                add_event("🧠 Análisis Gemini completado")
+                                add_event(f"🧠 Análisis Gemini completado")
                             except Exception as e:
                                 print(f"Gemini error: {e}")
                                 add_event(f"❌ Error en Gemini: {e}")
@@ -132,13 +140,15 @@ async def start_background_tasks():
                             message = f"🚨 CENTRAL DE ALERTAS COP-DROID 🚨\nEstado: INTRUSO DETECTADO\nAcción: Protocolo de disuasión activado (Láser y Sirena).\nPor favor, revise las cámaras de inmediato.{analisis_text}"
                             encoded_message = urllib.parse.quote(message)
                             url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage?chat_id={TELEGRAM_CHAT_ID}&text={encoded_message}&parse_mode=Markdown"
-                            urllib.request.urlopen(url, timeout=5)
+                            await asyncio.to_thread(urllib.request.urlopen, url, timeout=5)
                             add_event("📲 Alerta enviada a la central de Telegram")
                         except Exception as e:
                             print(f"Telegram error: {e}")
                             add_event(f"❌ Error enviando Telegram: {e}")
                             
-                    asyncio.create_task(analyze_and_alert())
+                    task = asyncio.create_task(analyze_and_alert())
+                    background_tasks.add(task)
+                    task.add_done_callback(background_tasks.discard)
 
                     connected = list(active_websockets.values())
                     has_other = len(connected) > 1

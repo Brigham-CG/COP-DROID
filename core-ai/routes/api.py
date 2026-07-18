@@ -5,7 +5,7 @@ from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 
 from config import LASER_TIMEOUT
-from state import devices, devices_registry_lock, active_websockets, get_last_person_time, system_events
+from state import devices, devices_registry_lock, active_websockets, get_last_person_time, system_events, person_analyses
 
 router = APIRouter()
 
@@ -26,6 +26,7 @@ async def list_devices():
                 "last_seen_seconds_ago": round(time.time() - st.last_seen, 1),
             }
             for dev_id, st in devices.items()
+            if "cam" in dev_id.lower()
         }
 
     laser_clients = [
@@ -42,6 +43,7 @@ async def list_devices():
             "is_on": laser_is_on,
         },
         "events": system_events,
+        "person_analyses": person_analyses,
     })
 
 

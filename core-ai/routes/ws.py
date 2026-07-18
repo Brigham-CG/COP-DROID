@@ -15,7 +15,7 @@ async def ws_endpoint(websocket: WebSocket, device_id: str):
     print(f"[+] Device connected: {device_id}")
     active_websockets[websocket] = device_id
 
-    is_camera = "laser" not in device_id.lower()
+    is_camera = "cam" in device_id.lower()
 
     if is_camera:
         state = await get_device(device_id)
