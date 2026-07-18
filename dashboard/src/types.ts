@@ -41,6 +41,17 @@ export interface EventLogEntry {
   message: string
 }
 
+export interface GeminiAnalysis {
+  timestamp?: number
+  etnia_aparente?: string
+  genero_y_edad_aproximada?: string
+  sombrero?: string
+  ropa_superior?: string
+  accesorios_visibles?: string
+  rasgos_distintivos?: string
+  [key: string]: any
+}
+
 export interface DevicesResponse {
   cameras: Record<string, CameraInfo>
   laser: LaserInfo
@@ -48,4 +59,5 @@ export interface DevicesResponse {
   radar_targets?: RadarTarget[]
   status?: RobotStatus
   events?: EventLogEntry[]
+  person_analyses?: GeminiAnalysis[]
 }

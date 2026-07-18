@@ -3,17 +3,41 @@ import asyncio
 import urllib.request
 import subprocess
 import os
+import urllib.parse
 from pathlib import Path
+
+
+import io
+import json
+from PIL import Image
+import google.generativeai as genai
 
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from .config import STALE_REMOVE_SECONDS, LASER_TIMEOUT, TELEGRAM_URL
-from .state import devices, devices_registry_lock, active_websockets, get_last_person_time
-from .routes import ws, stream, api
+from config import STALE_REMOVE_SECONDS, LASER_TIMEOUT, TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, GOOGLE_API_KEY
+from state import devices, devices_registry_lock, active_websockets, get_last_person_time, add_event
+from routes import ws, stream, api
 
 app = FastAPI(title="COP-DROID", version="0.1.0")
+
+if GOOGLE_API_KEY:
+    genai.configure(api_key=GOOGLE_API_KEY)
+gemini_model = genai.GenerativeModel('gemini-1.5-flash-latest')
+
+GEMINI_PROMPT = """
+Analiza la persona en la imagen para un sistema de seguridad. 
+Devuelve un objeto JSON con los siguientes campos:
+- etnia_aparente
+- genero_y_edad_aproximada
+- sombrero (indica si lleva y qué tipo)
+- ropa_superior (color y tipo de prenda)
+- accesorios_visibles (mochila, lentes, mascarilla, etc.)
+- rasgos_distintivos (barba, tatuajes, cicatrices)
+
+Sé objetivo y forense. Responde ÚNICAMENTE con el JSON.
+"""
 
 app.add_middleware(
     CORSMiddleware,
@@ -59,8 +83,10 @@ async def start_background_tasks():
                 stderr=subprocess.DEVNULL,
                 start_new_session=True
             )
+            add_event("🚨 Sirena activada localmente")
         except Exception as e:
             print(f"Siren error: {e}")
+            add_event(f"❌ Error activando sirena: {e}")
 
     async def laser_manager_task():
         laser_is_on = False
@@ -76,14 +102,43 @@ async def start_background_tasks():
 
                     play_alarm()
 
-                    def send_telegram():
-                        if not TELEGRAM_URL:
+                    async def analyze_and_alert():
+                        frame_to_analyze = None
+                        for st in devices.values():
+                            if st.frame:
+                                frame_to_analyze = st.frame
+                                break
+                        
+                        analisis_text = ""
+                        if frame_to_analyze and GOOGLE_API_KEY:
+                            try:
+                                img = Image.open(io.BytesIO(frame_to_analyze))
+                                response = await asyncio.to_thread(
+                                    gemini_model.generate_content,
+                                    [GEMINI_PROMPT, img],
+                                    generation_config={"response_mime_type": "application/json"}
+                                )
+                                data = json.loads(response.text)
+                                formatted_json = json.dumps(data, indent=2, ensure_ascii=False)
+                                analisis_text = f"\n\n📝 Análisis Forense:\n```json\n{formatted_json}\n```"
+                                add_event("🧠 Análisis Gemini completado")
+                            except Exception as e:
+                                print(f"Gemini error: {e}")
+                                add_event(f"❌ Error en Gemini: {e}")
+
+                        if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID:
                             return
                         try:
-                            urllib.request.urlopen(TELEGRAM_URL, timeout=5)
+                            message = f"🚨 CENTRAL DE ALERTAS COP-DROID 🚨\nEstado: INTRUSO DETECTADO\nAcción: Protocolo de disuasión activado (Láser y Sirena).\nPor favor, revise las cámaras de inmediato.{analisis_text}"
+                            encoded_message = urllib.parse.quote(message)
+                            url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage?chat_id={TELEGRAM_CHAT_ID}&text={encoded_message}&parse_mode=Markdown"
+                            urllib.request.urlopen(url, timeout=5)
+                            add_event("📲 Alerta enviada a la central de Telegram")
                         except Exception as e:
                             print(f"Telegram error: {e}")
-                    asyncio.create_task(asyncio.to_thread(send_telegram))
+                            add_event(f"❌ Error enviando Telegram: {e}")
+                            
+                    asyncio.create_task(analyze_and_alert())
 
                     connected = list(active_websockets.values())
                     has_other = len(connected) > 1
@@ -119,3 +174,7 @@ async def start_background_tasks():
 
     asyncio.create_task(cleanup_loop())
     asyncio.create_task(laser_manager_task())
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

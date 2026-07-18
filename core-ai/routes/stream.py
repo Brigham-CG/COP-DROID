@@ -3,7 +3,7 @@ import asyncio
 from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
 
-from ..state import get_device
+from state import get_device
 
 router = APIRouter()
 

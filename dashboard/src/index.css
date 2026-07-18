@@ -19,11 +19,11 @@
   --color-text-disabled: #47484C;
 
   /* Accent */
-  --color-accent-amber: #E8A33D;
+  --color-accent-green: #10B981;
   --color-accent-white: #FFFFFF;
 
   /* Status */
-  --color-status-active: #4ADE80;
+  --color-status-active: #10B981;
   --color-status-alert: #F59E0B;
   --color-status-critical: #EF4444;
   --color-status-offline: #52525B;

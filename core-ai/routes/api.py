@@ -4,8 +4,8 @@ import time
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 
-from ..config import LASER_TIMEOUT
-from ..state import devices, devices_registry_lock, active_websockets, get_last_person_time
+from config import LASER_TIMEOUT
+from state import devices, devices_registry_lock, active_websockets, get_last_person_time, system_events
 
 router = APIRouter()
 
@@ -41,6 +41,7 @@ async def list_devices():
             "clients": laser_clients,
             "is_on": laser_is_on,
         },
+        "events": system_events,
     })
 
 

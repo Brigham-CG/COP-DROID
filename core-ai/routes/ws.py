@@ -3,8 +3,8 @@ import asyncio
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
-from ..state import devices, active_websockets, get_device, set_last_person_time
-from ..detector import run_inference
+from state import devices, active_websockets, get_device, set_last_person_time
+from detector import run_inference
 
 router = APIRouter()
 

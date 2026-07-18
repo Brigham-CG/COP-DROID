@@ -41,7 +41,10 @@ export function EventLog({ events }: EventLogProps) {
             <span className="text-[--color-text-tertiary] font-mono text-xs shrink-0 w-16">
               {fmtTime(ev.timestamp)}
             </span>
-            <span className="text-[--color-text-primary] text-sm truncate">
+            <span 
+              className="text-[--color-text-primary] text-sm truncate hover:whitespace-normal hover:overflow-visible cursor-pointer"
+              title={ev.message}
+            >
               {ev.message}
             </span>
           </div>

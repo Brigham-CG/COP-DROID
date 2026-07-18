@@ -2,7 +2,7 @@ import time
 import asyncio
 from dataclasses import dataclass, field
 
-from . import config
+import config
 
 
 @dataclass

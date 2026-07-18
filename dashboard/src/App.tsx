@@ -1,23 +1,9 @@
 import { useDevices } from './hooks/useDevices'
 import { Header } from './components/Header'
-import { LaserPanel } from './components/LaserPanel'
 import { DeviceCard } from './components/DeviceCard'
 import { Radar180 } from './components/Radar180'
-import { StatusCard } from './components/StatusCard'
 import { EventLog } from './components/EventLog'
-import type { PatrolMode } from './types'
-
-const MODE_LABELS: Record<PatrolMode, string> = {
-  patrol: 'Patrol',
-  alert: 'Alert',
-  action: 'Action',
-}
-
-const MODE_COLORS: Record<PatrolMode, string> = {
-  patrol: 'var(--color-status-active)',
-  alert: 'var(--color-status-alert)',
-  action: 'var(--color-status-critical)',
-}
+import { PersonHistory } from './components/PersonHistory'
 
 export default function App() {
   const { devices, error } = useDevices(2000)
@@ -29,6 +15,7 @@ export default function App() {
   const radarTargets = devices?.radar_targets ?? []
   const status = devices?.status ?? null
   const events = devices?.events ?? []
+  const personAnalyses = devices?.person_analyses ?? []
 
   const hasSomeOnline = ids.some((id) => cameras[id]?.online)
   const primaryId = ids.find((id) => cameras[id]?.online) ?? ids[0]
@@ -61,7 +48,7 @@ export default function App() {
         )}
 
         {/* Two-column layout */}
-        <div className="grid gap-4" style={{ gridTemplateColumns: '1fr 320px' }}>
+        <div className="grid gap-4 lg:grid-cols-[1fr_450px]">
           {/* Left column: radar + camera(s) */}
           <div className="flex flex-col gap-4">
             <Radar180 targets={radarTargets} />
@@ -84,38 +71,13 @@ export default function App() {
             )}
           </div>
 
-          {/* Right column: status panel */}
+          {/* Right column: status panel & analysis history */}
           <div className="flex flex-col gap-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-[--color-text-secondary] text-xs font-semibold tracking-widest uppercase">
-                System Status
-              </h2>
-              <LaserPanel laser={laser} />
-            </div>
-
-            <StatusCard
-              label="Battery"
-              value={status ? `${Math.round(status.battery)}` : '—'}
-              unit="%"
-              dotColor={status && status.battery > 20 ? 'var(--color-status-active)' : 'var(--color-status-alert)'}
-            />
-
-            <StatusCard
-              label="Speed"
-              value={status ? status.speed.toFixed(1) : '—'}
-              unit="m/s"
-              dotColor="var(--color-text-tertiary)"
-            />
-
-            <StatusCard
-              label="Mode"
-              value={status ? MODE_LABELS[status.mode] : '—'}
-              dotColor={status ? MODE_COLORS[status.mode] : undefined}
-            />
-
             <EventLog events={events} />
 
-            <div className="text-center text-[--color-text-tertiary] text-xs font-mono py-3 border-t" style={{ borderColor: 'var(--color-divider)' }}>
+            <PersonHistory analyses={personAnalyses} />
+
+            <div className="text-center text-[--color-text-tertiary] text-xs font-mono py-3 border-t mt-auto" style={{ borderColor: 'var(--color-divider)' }}>
               ESP32-CAM · YOLOv8 · FastAPI
             </div>
           </div>

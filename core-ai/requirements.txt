@@ -1,0 +1,13 @@
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch
+torchvision
+numpy<2.0.0
+fastapi==0.110.0
+uvicorn==0.28.0
+opencv-python==4.9.0.80
+ultralytics
+python-dotenv==1.0.1
+websockets
+jinja2
+google-generativeai
+pillow

@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 from ultralytics import YOLO
 
-from .config import YOLO_MODEL
+from config import YOLO_MODEL
 
 model = YOLO(YOLO_MODEL)
 
