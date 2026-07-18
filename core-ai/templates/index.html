@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>YOLO Vision · Multi-Cámara</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0a0f1e; --surface: #111827; --card: #1a2235;
+      --border: rgba(255,255,255,0.07);
+      --accent: #3b82f6; --accent2: #6366f1;
+      --green: #22c55e; --red: #ef4444;
+      --text: #f1f5f9; --muted: #64748b;
+    }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg); color: var(--text);
+      min-height: 100vh; display: flex; flex-direction: column;
+    }
+    header {
+      display: flex; align-items: center; gap: 14px;
+      padding: 18px 32px; background: var(--surface);
+      border-bottom: 1px solid var(--border);
+    }
+    .logo {
+      width: 36px; height: 36px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-radius: 10px; display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+    }
+    header h1 { font-size: 1.1rem; font-weight: 600; letter-spacing: -0.3px; }
+    header span { font-size: 0.78rem; color: var(--muted); }
+    .badge {
+      margin-left: auto; display: flex; align-items: center; gap: 7px;
+      background: rgba(59,130,246,0.12);
+      border: 1px solid rgba(59,130,246,0.3);
+      color: var(--accent);
+      padding: 5px 13px; border-radius: 999px;
+      font-size: 0.75rem; font-weight: 500;
+    }
+    main {
+      flex: 1; padding: 28px 32px; max-width: 1400px; width: 100%; margin: 0 auto;
+    }
+    #grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+      gap: 20px;
+    }
+    .device-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 16px; overflow: hidden; display: flex; flex-direction: column;
+    }
+    .device-header {
+      display: flex; align-items: center; gap: 10px;
+      padding: 12px 16px; border-bottom: 1px solid var(--border);
+    }
+    .device-header .name { font-size: 0.85rem; font-weight: 600; }
+    .device-header .status {
+      margin-left: auto; display: flex; align-items: center; gap: 6px;
+      font-size: 0.72rem;
+    }
+    .dot { width: 7px; height: 7px; border-radius: 50%; }
+    .dot.online { background: var(--green); animation: pulse 1.5s ease-in-out infinite; }
+    .dot.offline { background: var(--red); }
+    @keyframes pulse {
+      0%,100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.7); }
+    }
+    .device-video {
+      position: relative; background: #000;
+      aspect-ratio: 4/3; display: flex; align-items: center; justify-content: center;
+    }
+    .device-video img { width: 100%; height: 100%; object-fit: contain; }
+    .device-stats {
+      display: flex; justify-content: space-between;
+      padding: 10px 16px; font-size: 0.75rem; color: var(--muted);
+      border-top: 1px solid var(--border);
+    }
+    .device-stats b { color: var(--text); font-variant-numeric: tabular-nums; }
+    .empty-state {
+      text-align: center; color: var(--muted); padding: 80px 20px; font-size: 0.9rem;
+    }
+    .laser-panel {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 16px; padding: 20px; margin-bottom: 24px;
+      display: flex; flex-direction: column; gap: 12px;
+    }
+    .laser-header {
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .laser-header h3 { font-size: 1rem; font-weight: 600; color: var(--accent); }
+    .laser-state {
+      font-size: 1.5rem; font-weight: 700; display: inline-block;
+      padding: 8px 16px; border-radius: 8px; background: rgba(0,0,0,0.3); transition: all 0.3s;
+    }
+    .laser-state.on { color: var(--red); text-shadow: 0 0 10px rgba(239, 68, 68, 0.5); }
+    .laser-state.off { color: var(--muted); }
+    .laser-clients { font-size: 0.8rem; color: var(--muted); }
+    footer {
+      text-align: center; padding: 14px; font-size: 0.72rem;
+      color: var(--muted); border-top: 1px solid var(--border);
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="logo">📷</div>
+    <div>
+      <h1>YOLO Vision · Multi-Cámara</h1>
+      <span>ESP32-CAM · WebSocket Push Mode</span>
+    </div>
+    <div class="badge" id="count-badge">0 dispositivos</div>
+  </header>
+
+  <main>
+    <div class="laser-panel" id="laser-panel" style="display: flex; flex-direction: row; align-items: center; justify-content: space-between; padding: 12px 20px;">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <span id="laser-state-indicator" style="font-size: 1.5rem; filter: grayscale(1);">🔴</span>
+        <strong style="color: var(--accent); font-size: 1rem;">Módulo Láser</strong>
+        <span id="laser-clients-list" style="font-size: 0.8rem; color: var(--muted);">Buscando...</span>
+      </div>
+      <span id="laser-status-badge" class="badge">Desconectado</span>
+    </div>
+
+    <div id="grid"></div>
+    <div class="empty-state" id="empty-state">Esperando conexión de dispositivos ESP32-CAM…</div>
+  </main>
+
+  <footer>ESP32-CAM · YOLOv8 · FastAPI · WebSocket &nbsp;|&nbsp; Multi-Device Push Architecture</footer>
+
+  <script>
+    const grid = document.getElementById('grid');
+    const emptyState = document.getElementById('empty-state');
+    const countBadge = document.getElementById('count-badge');
+    const knownCards = new Map();
+
+    function ensureCard(deviceId) {
+      if (knownCards.has(deviceId)) return knownCards.get(deviceId);
+
+      const card = document.createElement('div');
+      card.className = 'device-card';
+      card.innerHTML = `
+        <div class="device-header">
+          <span class="name">${deviceId}</span>
+          <span class="status"><span class="dot offline"></span><span class="status-text">offline</span></span>
+        </div>
+        <div class="device-video">
+          <img src="/video/${deviceId}" loading="lazy">
+        </div>
+        <div class="device-stats">
+          <span>FPS: <b class="fps">-</b></span>
+          <span>Detecciones: <b class="det">-</b></span>
+          <span>Visto: <b class="seen">-</b></span>
+        </div>`;
+      grid.appendChild(card);
+      knownCards.set(deviceId, card);
+      return card;
+    }
+
+    async function refresh() {
+      try {
+        const res = await fetch('/devices');
+        const data = await res.json();
+        
+        // Adaptación para la nueva estructura con 'cameras' y 'laser'
+        const camData = data.cameras || data;
+        const laserData = data.laser || null;
+        
+        const ids = Object.keys(camData);
+
+        emptyState.style.display = ids.length ? 'none' : 'block';
+        countBadge.textContent = `${ids.length} cámara${ids.length === 1 ? '' : 's'}`;
+
+        // Actualizar UI del láser
+        if (laserData) {
+          const badge = document.getElementById('laser-status-badge');
+          const indicator = document.getElementById('laser-state-indicator');
+          const clientsList = document.getElementById('laser-clients-list');
+          
+          if (laserData.connected) {
+            badge.textContent = "Conectado";
+            badge.style.color = "var(--green)";
+            badge.style.borderColor = "rgba(34, 197, 94, 0.3)";
+            badge.style.background = "rgba(34, 197, 94, 0.12)";
+            clientsList.textContent = laserData.clients.join(', ');
+          } else {
+            badge.textContent = "Desconectado";
+            badge.style.color = "var(--muted)";
+            badge.style.borderColor = "var(--border)";
+            badge.style.background = "transparent";
+            clientsList.textContent = "Buscando...";
+          }
+          
+          if (laserData.is_on) {
+            indicator.style.filter = "none";
+            indicator.style.textShadow = "0 0 10px red";
+          } else {
+            indicator.style.filter = "grayscale(1) opacity(0.5)";
+            indicator.style.textShadow = "none";
+          }
+        }
+
+        for (const id of ids) {
+          const info = camData[id];
+          const card = ensureCard(id);
+          const dot = card.querySelector('.dot');
+          const statusText = card.querySelector('.status-text');
+          dot.className = 'dot ' + (info.online ? 'online' : 'offline');
+          statusText.textContent = info.online ? 'online' : 'offline';
+          card.querySelector('.fps').textContent = info.fps ?? '-';
+          card.querySelector('.det').textContent = info.detections ?? '-';
+          card.querySelector('.seen').textContent = info.last_seen_seconds_ago + 's';
+        }
+
+        // Elimina tarjetas de dispositivos purgados en el backend
+        for (const [id, card] of knownCards) {
+          if (!ids.includes(id)) {
+            card.remove();
+            knownCards.delete(id);
+          }
+        }
+      } catch (e) {
+        console.error('Error refrescando dispositivos', e);
+      }
+    }
+
+    refresh();
+    setInterval(refresh, 2000);
+  </script>
+</body>
+</html>
