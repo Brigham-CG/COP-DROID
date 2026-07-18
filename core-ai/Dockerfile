@@ -13,7 +13,7 @@ ENV PYTHONUNBUFFERED=1 \
 WORKDIR /app
 
 COPY --from=builder /app/.venv /app/.venv
-COPY app ./app
+COPY main.py __init__.py ./app/
 
 EXPOSE 8000
 
