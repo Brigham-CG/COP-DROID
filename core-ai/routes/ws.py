@@ -12,7 +12,7 @@ router = APIRouter()
 @router.websocket("/ws/{device_id}")
 async def ws_endpoint(websocket: WebSocket, device_id: str):
     await websocket.accept()
-    print(f"[+] Dispositivo conectado: {device_id}")
+    print(f"[+] Device connected: {device_id}")
     active_websockets[websocket] = device_id
 
     is_camera = "laser" not in device_id.lower()
@@ -25,7 +25,7 @@ async def ws_endpoint(websocket: WebSocket, device_id: str):
         while True:
             message = await websocket.receive()
             if message["type"] == "websocket.disconnect":
-                print(f"[-] Dispositivo se desconectó voluntariamente: {device_id}")
+                print(f"[-] Device disconnected voluntarily: {device_id}")
                 break
 
             now = time.time()
@@ -58,8 +58,8 @@ async def ws_endpoint(websocket: WebSocket, device_id: str):
                 continue
 
     except WebSocketDisconnect:
-        print(f"[-] Dispositivo desconectado: {device_id}")
+        print(f"[-] Device disconnected: {device_id}")
     except Exception as e:
-        print(f"[!] Error en dispositivo {device_id}: {e}")
+        print(f"[!] Error on device {device_id}: {e}")
     finally:
         active_websockets.pop(websocket, None)

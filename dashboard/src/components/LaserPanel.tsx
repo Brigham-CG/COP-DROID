@@ -5,46 +5,34 @@ interface LaserPanelProps {
 }
 
 export function LaserPanel({ laser }: LaserPanelProps) {
-  const connected = laser?.connected ?? false
   const isOn = laser?.is_on ?? false
-  const clients = laser?.clients ?? []
+  const connected = laser?.connected ?? false
+
+  const offStyle: React.CSSProperties = {
+    borderColor: 'var(--color-border-subtle)',
+    color: 'var(--color-text-tertiary)',
+    backgroundColor: 'transparent',
+  }
+
+  const onStyle: React.CSSProperties = {
+    borderColor: 'var(--color-status-critical)',
+    color: 'var(--color-status-critical)',
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+  }
 
   return (
-    <div className="bg-[#1a2235] border border-white/10 rounded-xl flex flex-row items-center justify-between px-5 py-3">
-      <div className="flex items-center gap-3">
-        <span
-          className="text-2xl transition-all duration-300"
-          style={{
-            filter: isOn ? 'none' : 'grayscale(1) opacity(0.5)',
-            textShadow: isOn ? '0 0 10px red' : 'none',
-          }}
-        >
-          🔴
-        </span>
-        <strong className="text-[#3b82f6] text-base">Módulo Láser</strong>
-        <span className="text-xs text-[#64748b]">
-          {connected ? clients.join(', ') : 'Buscando...'}
-        </span>
-      </div>
-
+    <div
+      className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-mono font-medium transition-colors"
+      style={isOn && connected ? onStyle : offStyle}
+    >
       <span
-        className="text-xs font-medium px-3 py-1 rounded-full border transition-colors"
-        style={
-          connected
-            ? {
-                color: '#22c55e',
-                borderColor: 'rgba(34, 197, 94, 0.3)',
-                background: 'rgba(34, 197, 94, 0.12)',
-              }
-            : {
-                color: '#64748b',
-                borderColor: 'rgba(255,255,255,0.07)',
-                background: 'transparent',
-              }
-        }
-      >
-        {connected ? 'Conectado' : 'Desconectado'}
-      </span>
+        className="w-[5px] h-[5px] rounded-full"
+        style={{
+          backgroundColor: isOn && connected ? 'var(--color-status-critical)' : 'var(--color-text-disabled)',
+          animation: isOn && connected ? 'pulse-soft 2s ease-in-out infinite' : 'none',
+        }}
+      />
+      LASER {isOn && connected ? 'ON' : 'OFF'}
     </div>
   )
 }

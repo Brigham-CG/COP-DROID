@@ -1,1 +1,50 @@
 @import "tailwindcss";
+
+@theme {
+  /* Base backgrounds */
+  --color-bg-primary: #0A0A0B;
+  --color-bg-secondary: #111214;
+  --color-bg-tertiary: #1A1B1E;
+  --color-bg-elevated: #202124;
+
+  /* Borders & dividers */
+  --color-border-subtle: #26272B;
+  --color-border-medium: #33343A;
+  --color-divider: rgba(255, 255, 255, 0.06);
+
+  /* Text */
+  --color-text-primary: #F5F5F5;
+  --color-text-secondary: #A0A0A5;
+  --color-text-tertiary: #6B6C70;
+  --color-text-disabled: #47484C;
+
+  /* Accent */
+  --color-accent-amber: #E8A33D;
+  --color-accent-white: #FFFFFF;
+
+  /* Status */
+  --color-status-active: #4ADE80;
+  --color-status-alert: #F59E0B;
+  --color-status-critical: #EF4444;
+  --color-status-offline: #52525B;
+
+  /* Typography */
+  --font-sans: 'Inter', -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', 'IBM Plex Mono', monospace;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
+}
+
+@keyframes radar-sweep {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(180deg); }
+}
+
+@keyframes pulse-soft {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}

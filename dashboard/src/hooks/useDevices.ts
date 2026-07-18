@@ -18,7 +18,7 @@ export function useDevices(pollMs = 2000): UseDevicesResult {
       setDevices(data)
       setError(null)
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Error desconocido')
+      setError(e instanceof Error ? e.message : 'Unknown error')
     }
   }, [])
 

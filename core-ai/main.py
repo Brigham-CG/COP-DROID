@@ -36,7 +36,7 @@ async def start_background_tasks():
                 ]
                 for dev_id in stale:
                     devices.pop(dev_id, None)
-                    print(f"[x] Dispositivo purgado por inactividad: {dev_id}")
+                    print(f"[x] Device purged by inactivity: {dev_id}")
 
     async def laser_manager_task():
         laser_is_on = False
@@ -53,13 +53,13 @@ async def start_background_tasks():
                     has_other = len(connected) > 1
                     if has_other:
                         print(
-                            f"[*] Persona detectada: Encendiendo láser por 5 segundos. "
-                            f"Dispositivos conectados: {connected}"
+                            f"[*] Person detected: turning laser ON for 5 seconds. "
+                            f"Connected devices: {connected}"
                         )
                     else:
                         print(
-                            f"[*] Persona detectada (pero ESP32 del láser no parece estar conectado). "
-                            f"Solo hay: {connected}"
+                            f"[*] Person detected (but laser ESP32 does not seem connected). "
+                            f"Only: {connected}"
                         )
                     for ws in list(active_websockets.keys()):
                         try:
@@ -72,8 +72,8 @@ async def start_background_tasks():
                     has_other = len(connected) > 1
                     if has_other:
                         print(
-                            f"[*] 5 segundos sin detectar personas: Apagando láser "
-                            f"en los dispositivos: {connected}"
+                            f"[*] 5 seconds without detection: turning laser OFF "
+                            f"on devices: {connected}"
                         )
                     for ws in list(active_websockets.keys()):
                         try:

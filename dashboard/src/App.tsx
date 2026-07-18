@@ -2,6 +2,22 @@ import { useDevices } from './hooks/useDevices'
 import { Header } from './components/Header'
 import { LaserPanel } from './components/LaserPanel'
 import { DeviceCard } from './components/DeviceCard'
+import { Radar180 } from './components/Radar180'
+import { StatusCard } from './components/StatusCard'
+import { EventLog } from './components/EventLog'
+import type { PatrolMode } from './types'
+
+const MODE_LABELS: Record<PatrolMode, string> = {
+  patrol: 'Patrol',
+  alert: 'Alert',
+  action: 'Action',
+}
+
+const MODE_COLORS: Record<PatrolMode, string> = {
+  patrol: 'var(--color-status-active)',
+  alert: 'var(--color-status-alert)',
+  action: 'var(--color-status-critical)',
+}
 
 export default function App() {
   const { devices, error } = useDevices(2000)
@@ -9,34 +25,102 @@ export default function App() {
   const cameras = devices?.cameras ?? {}
   const laser = devices?.laser ?? null
   const ids = Object.keys(cameras)
+  const bboxes = devices?.bboxes ?? {}
+  const radarTargets = devices?.radar_targets ?? []
+  const status = devices?.status ?? null
+  const events = devices?.events ?? []
+
+  const hasSomeOnline = ids.some((id) => cameras[id]?.online)
+  const primaryId = ids.find((id) => cameras[id]?.online) ?? ids[0]
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#0a0f1e]">
-      <Header cameras={cameras} />
+    <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--color-bg-primary)' }}>
+      <Header connected={hasSomeOnline} cameraCount={ids.length} />
 
-      <main className="flex-1 px-8 py-7 mx-auto w-full" style={{ maxWidth: '1400px' }}>
-        <LaserPanel laser={laser} />
-
+      <main
+        className="flex-1 w-full"
+        style={{ padding: '16px', maxWidth: 1440, margin: '0 auto' }}
+      >
         {error && (
-          <div className="text-center text-[#ef4444] text-sm py-4">{error}</div>
-        )}
-
-        {ids.length === 0 && !error && (
-          <div className="text-center text-[#64748b] py-20 text-sm">
-            Esperando conexión de dispositivos ESP32-CAM…
+          <div
+            className="text-center text-xs font-mono py-3 rounded-md border mb-4"
+            style={{
+              color: 'var(--color-status-alert)',
+              borderColor: 'rgba(245, 158, 11, 0.2)',
+              backgroundColor: 'rgba(245, 158, 11, 0.06)',
+            }}
+          >
+            {error}
           </div>
         )}
 
-        <div className="grid gap-5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))' }}>
-          {ids.map((id) => (
-            <DeviceCard key={id} deviceId={id} info={cameras[id]} />
-          ))}
+        {ids.length === 0 && !error && (
+          <div className="text-center py-20 text-sm font-mono" style={{ color: 'var(--color-text-tertiary)' }}>
+            AWAITING ESP32-CAM CONNECTION…
+          </div>
+        )}
+
+        {/* Two-column layout */}
+        <div className="grid gap-4" style={{ gridTemplateColumns: '1fr 320px' }}>
+          {/* Left column: radar + camera(s) */}
+          <div className="flex flex-col gap-4">
+            <Radar180 targets={radarTargets} />
+
+            {primaryId && (
+              <DeviceCard
+                key={primaryId}
+                deviceId={primaryId}
+                info={cameras[primaryId]}
+                bboxes={bboxes[primaryId]}
+              />
+            )}
+
+            {ids.length > 1 && (
+              <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(${Math.min(ids.length - 1, 2)}, 1fr)` }}>
+                {ids.filter((id) => id !== primaryId).map((id) => (
+                  <DeviceCard key={id} deviceId={id} info={cameras[id]} bboxes={bboxes[id]} />
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Right column: status panel */}
+          <div className="flex flex-col gap-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-[--color-text-secondary] text-xs font-semibold tracking-widest uppercase">
+                System Status
+              </h2>
+              <LaserPanel laser={laser} />
+            </div>
+
+            <StatusCard
+              label="Battery"
+              value={status ? `${Math.round(status.battery)}` : '—'}
+              unit="%"
+              dotColor={status && status.battery > 20 ? 'var(--color-status-active)' : 'var(--color-status-alert)'}
+            />
+
+            <StatusCard
+              label="Speed"
+              value={status ? status.speed.toFixed(1) : '—'}
+              unit="m/s"
+              dotColor="var(--color-text-tertiary)"
+            />
+
+            <StatusCard
+              label="Mode"
+              value={status ? MODE_LABELS[status.mode] : '—'}
+              dotColor={status ? MODE_COLORS[status.mode] : undefined}
+            />
+
+            <EventLog events={events} />
+
+            <div className="text-center text-[--color-text-tertiary] text-xs font-mono py-3 border-t" style={{ borderColor: 'var(--color-divider)' }}>
+              ESP32-CAM · YOLOv8 · FastAPI
+            </div>
+          </div>
         </div>
       </main>
-
-      <footer className="text-center py-3.5 text-xs text-[#64748b] border-t border-white/10">
-        ESP32-CAM · YOLOv8 · FastAPI · WebSocket &nbsp;|&nbsp; Multi-Device Push Architecture
-      </footer>
     </div>
   )
 }
